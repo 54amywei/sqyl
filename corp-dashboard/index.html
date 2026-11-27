@@ -2082,10 +2082,7 @@
       <div class="card-panel chart-panel">
         <div class="chart-hd">
           <h3 id="chartTitle">对公存款余额 · 走势（2026-11-25）</h3>
-          <div class="chart-legend">
-            <span><i style="background:#3569e8;border-radius:3px"></i>余额</span>
-            <span><i style="background:#f59e0b;border-radius:50%"></i>日均</span>
-          </div>
+          <div class="chart-legend" id="chartLegend"></div>
         </div>
         <div class="chart-box" id="chartContainer">
           <div id="chartTooltip" class="chart-tooltip"></div>
@@ -2111,7 +2108,7 @@
         </div>
 
         <div class="sort-row" id="sortChips">
-          <button type="button" class="sort-chip on" data-sort="value">按余额</button>
+          <button type="button" class="sort-chip on" data-sort="value" id="rankSortValue">按余额</button>
           <button type="button" class="sort-chip" data-sort="day">比上日</button>
           <button type="button" class="sort-chip" data-sort="month">比上月</button>
           <button type="button" class="sort-chip" data-sort="year">比上季</button>
@@ -2123,7 +2120,7 @@
             <tr>
               <th>排名</th>
               <th id="dimLabel">支行</th>
-              <th class="sortable" data-sort="value">余额 ↕</th>
+              <th class="sortable" data-sort="value" id="rankValueHeader">余额 ↕</th>
               <th class="sortable" data-sort="day">增量 ↕</th>
               <th class="sortable" data-sort="day">增速 ↕</th>
             </tr>
@@ -2489,13 +2486,44 @@
   /* ═══════════════════════════════════════════════
      三、交互式趋势图（点击柱体弹出精确 Tooltip）
      ═══════════════════════════════════════════════ */
+  function relatedMetricKey(key) {
+    return ({ depositBal: 'depositAvg', depositAvg: 'depositBal', loanBal: 'loanAvg', loanAvg: 'loanBal' })[key] || null;
+  }
+
   function seriesFor(key) {
-    const base = metricValue(key);
+    const compareKey = relatedMetricKey(key);
     const idx = KEYS.indexOf(key);
-    return TIME[state.time].axis.map((l, i) => {
-      const v = base * (0.947 + i * 0.011 + Math.sin(i * 1.35 + idx) * 0.007 + i * 0.0004);
-      return { label: l, value: v, avg: v * (0.968 + Math.sin(i * 0.9 + idx) * 0.005) };
+    const end = new Date(`${state.date}T00:00:00Z`);
+    return Array.from({ length: 30 }, (_, i) => {
+      const date = new Date(end);
+      date.setUTCDate(end.getUTCDate() - (29 - i));
+      const monthDay = `${String(date.getUTCMonth() + 1).padStart(2, '0')}/${String(date.getUTCDate()).padStart(2, '0')}`;
+      const label = (i % 6 === 0 || i === 29) ? monthDay : '';
+      const wave = Math.sin(i * 1.35 + idx) * 0.004 + Math.sin(i * 0.42 + idx) * 0.002;
+      const progress = i / 29;
+      const value = metricValue(key) * (0.978 + progress * 0.022 + wave);
+      const compareWave = Math.sin(i * 0.9 + (compareKey ? KEYS.indexOf(compareKey) : idx)) * 0.003;
+      const compare = compareKey ? metricValue(compareKey) * (0.978 + progress * 0.022 + compareWave) : null;
+      return { label, date: `${date.getUTCFullYear()}-${monthDay.replace('/', '-')}`, value, compare };
     });
+  }
+
+  function displayUnit(m, level) {
+    if (m.unit !== '亿元') return m.unit;
+    if (level >= 3) return '元';
+    if (level === 2) return '万元';
+    return '亿元';
+  }
+
+  function displayScale(m, level) {
+    if (m.unit !== '亿元') return 1;
+    return level >= 3 ? 100000000 : level === 2 ? 10000 : 1;
+  }
+
+  function fmtUnit(value, unit) {
+    return unit === '户' || unit === '元'
+      ? Math.round(value).toLocaleString('zh-CN')
+      : value.toFixed(2);
   }
 
   function hideChartTooltip() {
@@ -2508,9 +2536,16 @@
     const data = seriesFor(key);
     const unit = m.unit;
 
-    $('chartTitle').textContent = `${m.name} · 走势（${state.date}）`;
-
-    const vals = data.map((d) => d.value).concat(data.map((d) => d.avg));
+    const compareKey = relatedMetricKey(key);
+    const customerMetric = m.unit === '户';
+    const mainLabel = customerMetric ? '客户总数' : (m.name.includes('日均') ? '日均' : '余额');
+    const compareLabel = customerMetric ? '' : (mainLabel === '余额' ? '日均' : '余额');
+    const mainUnit = displayUnit(m, 0);
+    $('chartLegend').innerHTML = customerMetric
+      ? `<span><i style="background:#3569e8;border-radius:3px"></i>客户总数（${mainUnit}）</span>`
+      : `<span><i style="background:#3569e8;border-radius:3px"></i>${mainLabel}（${mainUnit}）</span><span><i style="background:#f59e0b;border-radius:50%"></i>${compareLabel}（${displayUnit(M[compareKey], 0)}）</span>`;
+    const vals = data.map((d) => d.value).concat(compareKey ? data.map((d) => d.compare) : []);
+    $('chartTitle').textContent = `${m.name} · 近30天走势（截至${state.date}）`;
     let min = Math.min(...vals);
     let max = Math.max(...vals);
     const pad = (max - min) * 0.72 || max * 0.01;
@@ -2537,7 +2572,7 @@
       const gy = T + (ih / 3) * i;
       const gv = max - ((max - min) / 3) * i;
       svg += `<line x1="${L}" y1="${gy.toFixed(1)}" x2="${W - R}" y2="${gy.toFixed(1)}" stroke="#e9eef8" stroke-width="1.2" stroke-dasharray="4 4"/>
-        <text x="${L - 8}" y="${(gy + 4).toFixed(1)}" text-anchor="end" fill="#8d99b8" font-size="12">${unit === '户' ? Math.round(gv).toLocaleString('zh-CN') : gv.toFixed(0)}</text>`;
+        <text x="${L - 8}" y="${(gy + 4).toFixed(1)}" text-anchor="end" fill="#8d99b8" font-size="12">${unit === '户' || unit === '元' ? Math.round(gv).toLocaleString('zh-CN') : gv.toFixed(0)}</text>`;
     }
 
     const step = iw / data.length;
@@ -2554,14 +2589,17 @@
         <text x="${cx.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="${isAct ? '#1b43a8' : '#8d99b8'}" font-weight="${isAct ? '700' : '500'}" font-size="12">${d.label}</text>`;
     });
 
-    const pts = data.map((d, i) => `${(L + step * (i + 0.5)).toFixed(1)},${yOf(d.avg).toFixed(1)}`).join(' ');
-    svg += `<polyline points="${pts}" fill="none" stroke="#f59e0b" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round"/>`;
-
+    if (compareKey) {
+      const pts = data.map((d, i) => `${(L + step * (i + 0.5)).toFixed(1)},${yOf(d.compare).toFixed(1)}`).join(' ');
+      svg += `<polyline points="${pts}" fill="none" stroke="#f59e0b" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round"/>`;
+      data.forEach((d, i) => {
+        const cx = L + step * (i + 0.5);
+        const cy = yOf(d.compare);
+        const isAct = state.activeChartIdx === i;
+        svg += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${isAct ? 5.5 : 4}" fill="#ffffff" stroke="#f59e0b" stroke-width="2.4"/>`;
+      });
+    }
     data.forEach((d, i) => {
-      const cx = L + step * (i + 0.5);
-      const cy = yOf(d.avg);
-      const isAct = state.activeChartIdx === i;
-      svg += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${isAct ? 5.5 : 4}" fill="#ffffff" stroke="#f59e0b" stroke-width="2.4"/>`;
       svg += `<rect class="chart-hit" style="cursor:pointer" data-idx="${i}" x="${(L + step * i).toFixed(1)}" y="${T}" width="${step.toFixed(1)}" height="${ih + 26}" fill="transparent"/>`;
     });
 
@@ -2575,11 +2613,11 @@
         renderChart();
         const d = data[i];
         const cxPct = ((L + step * (i + 0.5)) / W) * 100;
-        const topPct = (Math.min(yOf(d.value), yOf(d.avg)) / H) * 100;
+        const topPct = (Math.min(yOf(d.value), compareKey ? yOf(d.compare) : yOf(d.value)) / H) * 100;
         const tt = $('chartTooltip');
-        tt.innerHTML = `<div style="font-weight:700;color:#bfdbfe;margin-bottom:2px">${d.label}</div>
-          <div>余额：<b class="tabular">${fmt(d.value, m)} ${unit}</b></div>
-          <div>日均：<b class="tabular" style="color:#fcd34d">${fmt(d.avg, m)} ${unit}</b></div>`;
+        tt.innerHTML = `<div style="font-weight:700;color:#bfdbfe;margin-bottom:2px">${d.date}</div>
+          <div>${mainLabel}：<b class="tabular">${fmtUnit(d.value, mainUnit)} ${mainUnit}</b></div>
+          ${compareKey ? `<div>${compareLabel}：<b class="tabular" style="color:#fcd34d">${fmtUnit(d.compare, displayUnit(M[compareKey], 0))} ${displayUnit(M[compareKey], 0)}</b></div>` : ''}`;
         tt.style.left = Math.max(19, Math.min(81, cxPct)) + '%';
         tt.style.top = Math.max(26, topPct - 3) + '%';
         tt.classList.add('show');
@@ -2615,7 +2653,13 @@
     const rows = rowData().sort((a, b) => b[state.sort] - a[state.sort]);
 
     $('rankTitle').textContent = `${DIM_LABEL[state.dim]}排名 · ${m.name}`;
-    $('rankUnit').textContent = `单位：${m.unit}`;
+    const isCustomerMetric = m.unit === '户';
+    $('rankSortValue').textContent = isCustomerMetric ? '按客户数' : '按余额';
+    $('rankValueHeader').textContent = isCustomerMetric ? '客户数 ↕' : '余额 ↕';
+    const rankLevel = state.dim === 'manager' ? 2 : 1;
+    const rankUnit = displayUnit(m, rankLevel);
+    const rankScale = displayScale(m, rankLevel);
+    $('rankUnit').textContent = `单位：${rankUnit}`;
     $('dimLabel').textContent = DIM_LABEL[state.dim];
 
     $('seg').querySelectorAll('.seg-btn').forEach((b) => b.classList.toggle('on', b.dataset.dim === state.dim));
@@ -2627,8 +2671,8 @@
       return `<tr data-name="${r.name}">
         <td><span class="rank-badge ${i < 3 ? 'r' + (i + 1) : ''}">${i + 1}</span></td>
         <td class="nm">${r.name}</td>
-        <td class="val-col">${fmt(r.value, m)}</td>
-        <td class="${dcls}" style="font-weight:500">${signed(r.day, m)}</td>
+        <td class="val-col">${fmtUnit(r.value * rankScale, rankUnit)}</td>
+        <td class="${dcls}" style="font-weight:500">${(r.day > 0 ? '+' : r.day < 0 ? '-' : '') + fmtUnit(Math.abs(r.day) * rankScale, rankUnit)}</td>
         <td><span class="pct-pill ${pcls}">${arrow(r.pct)}${Math.abs(r.pct).toFixed(1)}%</span></td>
       </tr>`;
     }).join('');
@@ -2677,8 +2721,10 @@
     $('sheetTitle').textContent = cur.name;
     $('sheetSub').textContent = `${LEVEL_NAME[lv]} · ${state.date} · ${m.name}`;
     $('sheetMetric').textContent = `${m.name}（${LEVEL_NAME[lv]}）`;
-    $('sheetValue').textContent = fmt(cur.value, m);
-    $('sheetUnit').textContent = m.unit;
+    const unit = displayUnit(m, lv);
+    const scale = displayScale(m, lv);
+    $('sheetValue').textContent = fmtUnit(cur.value * scale, unit);
+    $('sheetUnit').textContent = unit;
 
     const seed = lv * 13 + cur.name.length;
     const day = cur.value * ((seed % 9) - 2) * 0.004;
@@ -2689,7 +2735,7 @@
 
     $('sheetGrid').innerHTML = [['比上日', day], ['比上月', month], ['比上季', year], ['比上年', plan], ['完成度', rate]].map((c) => {
       const isRate = c[0] === '完成度';
-      const txt = isRate ? c[1].toFixed(1) + '%' : signed(c[1], m);
+      const txt = isRate ? c[1].toFixed(1) + '%' : (c[1] > 0 ? '+' : c[1] < 0 ? '-' : '') + fmtUnit(Math.abs(c[1]) * scale, unit);
       const cls = isRate ? '' : dir(c[1]);
       return `<div class="sheet-grid-item">
         <span>${c[0]}</span>
@@ -2697,12 +2743,12 @@
       </div>`;
     }).join('');
 
-    const series = seriesFor(state.metric).map((x) => (x.value * cur.value) / M[state.metric].base);
-    const sMax = Math.max(...series);
-    const sMin = Math.min(...series);
-    $('sheetBars').innerHTML = series.map((v, i) => {
-      const h = 24 + ((v - sMin) / (sMax - sMin || 1)) * 60;
-      return `<div><i style="height:${h.toFixed(0)}%"></i><span>${TIME[state.time].axis[i]}</span></div>`;
+    const series = seriesFor(state.metric).filter((_, i) => i % 6 === 0 || i === 29).map((x) => ({ value: (x.value * cur.value) / M[state.metric].base, label: x.label }));
+    const sMax = Math.max(...series.map((x) => x.value));
+    const sMin = Math.min(...series.map((x) => x.value));
+    $('sheetBars').innerHTML = series.map((x) => {
+      const h = 24 + ((x.value - sMin) / (sMax - sMin || 1)) * 60;
+      return `<div><i style="height:${h.toFixed(0)}%"></i><span>${x.label}</span></div>`;
     }).join('');
 
     const nextLabel = ['机构 / 部门', '员工', '客户', '账户', '账户明细'][lv];
@@ -2712,7 +2758,7 @@
     $('sheetSubList').innerHTML = items.length
       ? items.map((it, i) => `<button type="button" class="subrow" data-idx="${i}">
           <span class="subrow-l">${it.name}<span class="subrow-tag">${it.tag}</span></span>
-          <span class="subrow-r tabular">${fmt(it.value, m)} ${m.unit} <span style="color:#a4b0cb;font-weight:400">›</span></span>
+          <span class="subrow-r tabular">${fmtUnit(it.value * displayScale(m, it.level), displayUnit(m, it.level))} ${displayUnit(m, it.level)} <span style="color:#a4b0cb;font-weight:400">›</span></span>
         </button>`).join('')
       : '<div style="padding:16px 0;text-align:center;font-size:12px;color:#8390b0">账户为最末层级，无下级明细数据</div>';
 
@@ -2742,7 +2788,7 @@
     if (!row) return;
     drillStack = [
       { level: 0, name: '全行汇总', value: metricValue(state.metric) },
-      { level: 1, name: row.name, value: row.value }
+      { level: state.dim === 'manager' ? 2 : 1, name: row.name, value: row.value }
     ];
     renderDrill();
   }
