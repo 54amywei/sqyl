@@ -24,7 +24,7 @@
 - AI 评审是辅助意见；人负责审核代码、业务、安全、权限和发布。
 
 ## 原型和需求更新联动
-- 修改 prototype/index.html 或 docs/requirements/corporate-dashboard-design-brief.md 时，必须同一任务检查并同步 docs/requirements/corporate-dashboard.md、docs/acceptance-checklist.md 和 README.md 的相关内容与状态。
+- 修改 对公驾驶舱/index.html 或 docs/requirements/corporate-dashboard-design-brief.md 时，必须同一任务检查并同步 docs/requirements/corporate-dashboard.md、docs/acceptance-checklist.md 和 README.md 的相关内容与状态。
 - 对变化写清楚“已确认”还是“待确认”；不能把设计稿新增的要求自动当成已批准的业务口径。
 - 仅同步受影响部分，保留原始需求说明作为来源，不覆盖原文。
 - UI 原型更新需提供截图或预览链接；合并到 main 后由 GitHub Actions 自动更新 Pages 预览。
