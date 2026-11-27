@@ -2106,7 +2106,7 @@
         <div class="seg" id="seg">
           <button type="button" class="seg-btn on" data-dim="branch">支行</button>
           <button type="button" class="seg-btn" data-dim="unit">经营单位</button>
-          <button type="button" class="seg-btn" data-dim="office">办公室</button>
+          <button type="button" class="seg-btn" data-dim="office">中后台</button>
           <button type="button" class="seg-btn" data-dim="manager">客户经理</button>
         </div>
 
@@ -2590,7 +2590,7 @@
   /* ═══════════════════════════════════════════════
      四、多维度机构 / 员工排名表
      ═══════════════════════════════════════════════ */
-  const DIM_LABEL = { branch: '支行', unit: '经营单位', office: '办公室', manager: '客户经理' };
+  const DIM_LABEL = { branch: '支行', unit: '经营单位', office: '中后台', manager: '客户经理' };
   const dimList = (d) => (d === 'branch' ? BRANCHES : d === 'unit' ? UNITS : d === 'office' ? OFFICES : MANAGERS);
 
   function rowData(dim) {
