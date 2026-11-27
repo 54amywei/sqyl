@@ -13,7 +13,7 @@
 只读检查当前分支相对 main 的 diff 和对应 Issue。按严重程度报告可由代码或已确认需求支持的问题，给路径/行号和影响；区分确定问题与需人确认项。不修改代码，不做推测性建议。
 
 ## 全量同步更新
-本次修改了原型或原始需求说明。请比较当前分支与 main 中的 prototype/index.html 和 docs/requirements/corporate-dashboard-design-brief.md，先总结变化，再同步所有受影响的派生材料：README.md、docs/requirements/corporate-dashboard.md、docs/acceptance-checklist.md。只更新受影响内容，保留原始说明，不要覆盖来源文件。
+本次修改了原型或原始需求说明。请比较当前分支与 main 中的 对公驾驶舱/index.html 和 docs/requirements/corporate-dashboard-design-brief.md，先总结变化，再同步所有受影响的派生材料：README.md、docs/requirements/corporate-dashboard.md、docs/acceptance-checklist.md。只更新受影响内容，保留原始说明，不要覆盖来源文件。
 
 对每项新增或变化的业务定义、数据日期、实时刷新、排序、目标、权限、下钻和报表，标记为“原文设计要求”“已由负责人确认”或“待确认”；不能仅凭设计文档推定业务已批准。若关键含义不清，保留待确认并提出问题，不自行猜测。
 
