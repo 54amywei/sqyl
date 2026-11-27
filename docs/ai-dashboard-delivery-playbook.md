@@ -23,3 +23,10 @@ Codex 协助分析、计划、实现和初步检查；需求方确认业务目�
 
 ## Codex 每次任务的用法
 先只读盘点 → Codex 列问题与计划 → 人确认 → 小范围实现 → 检查 diff/验证 → PR 人审 → 业务验收。
+
+## 自动更新约定
+- 原始输入以 prototype/index.html 和 docs/requirements/corporate-dashboard-design-brief.md 为准；结构化需求基线和验收清单是派生材料。
+- 修改原型或说明文件时，用 docs/ai-prompts.md 的“全量同步更新”提示词让 Codex 读取变更并同步受影响的 README、需求基线、验收清单。
+- PR 应说明原型变化、派生文档更新、仍待业务确认项和预览截图。
+- 合并到 main 后，GitHub Actions 自动将 prototype/ 目录发布到 GitHub Pages。首次使用需在仓库 Settings → Pages 将 Build and deployment source 设为 GitHub Actions；配置成功后可从 Actions 部署摘要获得预览地址。
+- GitHub Actions 能自动部署静态页面，但不会理解需求并自动改写业务规格；语义同步由 Codex 执行，人审核后合并。
