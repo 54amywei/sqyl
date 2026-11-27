@@ -3,10 +3,12 @@
 看板协作试点仓库。Codex 协助需求分析、计划、实现和初步检查；需求方与开发负责人对业务口径、代码审核和发布负责。
 
 ## 项目资料
+- [HTML 移动端原型](prototype/index.html)
+- [需求与设计说明原文](docs/requirements/corporate-dashboard-design-brief.md)
+- [需求基线与待确认项](docs/requirements/corporate-dashboard.md)
 - [AI 协作交付流程](docs/ai-dashboard-delivery-playbook.md)
-- [对公业务全景看板需求基线（待确认）](docs/requirements/corporate-dashboard.md)
 - [Codex 提示词](docs/ai-prompts.md)
 - [验收清单](docs/acceptance-checklist.md)
 
-## 安全与预览
-当前仓库为公开仓库。仅提交获准公开且已脱敏的材料。不要提交真实经营数据、客户/员工信息、凭据或敏感截图。GitHub Pages 会公开发布静态文件；只有内容明确获准公开后才能启用。原型里的模拟数据和“实时”文案不代表真实数据或生产承诺。
+## 演示数据说明
+原型使用随机/模拟数据，仅用于客户演示，不代表真实经营数据或生产数据。演示时应避免将随机数解释为实际业务结论。公开仓库及 GitHub Pages 内容任何人都可能访问；本仓库当前仅放演示原型和协作文档。
