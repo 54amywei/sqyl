@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "prototype/**"
+      - "对公驾驶舱/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -33,7 +33,7 @@ jobs:
       - name: Upload prototype
         uses: actions/upload-pages-artifact@v3
         with:
-          path: prototype
+          path: 对公驾驶舱
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
