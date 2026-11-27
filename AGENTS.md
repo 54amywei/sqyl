@@ -1,0 +1,1 @@
+See docs/ai-dashboard-delivery-playbook.md for workflow. Do not infer business metrics, data sources, access rules, or production behavior. Check project guidance before changes.
